@@ -160,6 +160,8 @@ static int mt9v113_power_set(struct v4l2_int_device *s, enum v4l2_power power)
 	case V4L2_POWER_ON:
 
 		isp_configure_interface(vdev->cam->isp, &mt9v113_if_config);
+		/* Set RESET_BAR to 0 */
+		gpio_set_value(LEOPARD_RESET_GPIO, 0);
 
 		/* turn on VDD */
 		regulator_enable(cam_1v8_reg);
@@ -167,9 +169,6 @@ static int mt9v113_power_set(struct v4l2_int_device *s, enum v4l2_power power)
 		/* turn on VDD_IO */
 		regulator_enable(cam_2v8_reg);
 		mdelay(50);
-
-		/* Set RESET_BAR to 0 */
-		gpio_set_value(LEOPARD_RESET_GPIO, 0);
 
 		/* Enable EXTCLK */
 		isp_set_xclk(vdev->cam->isp, MT9V113_CLK_MIN*2, CAM_USE_XCLKA);
@@ -294,7 +293,7 @@ static int mt9t112_set_prv_data(void *priv)
 }
 
 /**
- * @brief mt9t112_power_set - Power-on or power-off TVP5146 device
+ * @brief mt9t112_power_set - Power-on or power-off MT9T112 device
  *
  * @param power - enum, Power on/off, resume/standby
  *
@@ -320,6 +319,8 @@ static int mt9t112_power_set(struct v4l2_int_device *s, enum v4l2_power power)
 		isp_configure_interface(vdev->cam->isp, &mt9t112_if_config);
 #endif
 
+		/* Set RESET_BAR to 0 */
+		gpio_set_value(LEOPARD_RESET_GPIO, 0);
 
 		/* turn on VDD */
 		regulator_enable(cam_1v8_reg);
@@ -331,11 +332,8 @@ static int mt9t112_power_set(struct v4l2_int_device *s, enum v4l2_power power)
 
 		mdelay(50);
 
-		/* Set RESET_BAR to 0 */
-		gpio_set_value(LEOPARD_RESET_GPIO, 0);
-
 		/* Enable EXTCLK */
-		isp_set_xclk(vdev->cam->isp, 24000000, CAM_USE_XCLKA);
+		isp_set_xclk(vdev->cam->isp, 12000000, CAM_USE_XCLKA);
 
 		/*
 		 * Wait at least 70 CLK cycles (w/EXTCLK = 24MHz):
@@ -371,6 +369,178 @@ struct mt9t112_platform_data mt9t112_pdata = {
 };
 
 #endif				/* #ifdef CONFIG_VIDEO_MT9T112 */
+
+#if defined(CONFIG_SOC_CAMERA_MT9P031) || defined(CONFIG_SOC_CAMERA_MT9P031_MODULE)
+#include <media/mt9p031.h>
+
+#define ISP_MT9P031_MCLK	216000000
+
+/* Arbitrary memory handling limit */
+#define MT9P031_BIGGEST_FRAME_BYTE_SIZE	PAGE_ALIGN((2592 * 1944) * 2 * 4 )
+
+static struct isp_interface_config mt9p031_if_config = {
+	.ccdc_par_ser		= ISP_PARLL,
+	.dataline_shift		= 0x1,
+	.hsvs_syncdetect	= ISPCTRL_SYNC_DETECT_VSRISE,
+	.strobe			= 0x0,
+	.prestrobe		= 0x0,
+	.shutter		= 0x0,
+	.cam_mclk		= ISP_MT9P031_MCLK,
+	.wenlog 		= ISPCCDC_CFG_WENLOG_AND,
+	.wait_hs_vs		= 2,
+	.u.par.par_bridge	= 0x0,
+	.u.par.par_clk_pol	= 0x0,
+};
+
+static struct v4l2_ifparm mt9p031_ifparm_s = {
+	.if_type = V4L2_IF_TYPE_RAW,
+	.u 	 = {
+		.raw = {
+			.frame_start_on_rising_vs = 1,
+			.bt_sync_correct	= 0,
+			.swap			= 0,
+			.latch_clk_inv		= 0,
+			.nobt_hs_inv		= 0,	/* active high */
+			.nobt_vs_inv		= 0,	/* active high */
+			.clock_min		= MT9P031_CLK_MIN,
+			.clock_max		= MT9P031_CLK_MAX,
+		},
+	},
+};
+
+/**
+ * @brief mt9p031_ifparm - Returns the mt9p031 interface parameters
+ *
+ * @param p - pointer to v4l2_ifparm structure
+ *
+ * @return result of operation - 0 is success
+ */
+static int mt9p031_ifparm(struct v4l2_ifparm *p)
+{	
+	if (p == NULL)
+		return -EINVAL;
+
+	*p = mt9p031_ifparm_s;
+	return 0;
+}
+
+#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
+static struct omap34xxcam_hw_config mt9p031_hwc = {
+	.dev_index		= 1,
+	.dev_minor		= -1,
+	.dev_type		= OMAP34XXCAM_SLAVE_SENSOR,
+	.u.sensor.sensor_isp	= 0,
+	.u.sensor.capture_mem	= MT9P031_BIGGEST_FRAME_BYTE_SIZE,
+	.u.sensor.ival_default	= { 1, 30 },
+};
+#endif
+
+/**
+ * @brief mt9p031_set_prv_data - Returns mt9p031 omap34xx driver private data
+ *
+ * @param priv - pointer to omap34xxcam_hw_config structure
+ *
+ * @return result of operation - 0 is success
+ */
+static int mt9p031_set_prv_data(void *priv)
+{
+#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
+	struct omap34xxcam_hw_config *hwc = priv;
+
+	if (priv == NULL)
+		return -EINVAL;
+
+	*hwc = mt9p031_hwc;
+	return 0;
+#else
+	return -EINVAL;
+#endif
+}
+
+/**
+ * @brief mt9p031_power_set - Power-on or power-off mt9p031 device
+ *
+ * @param power - enum, Power on/off, resume/standby
+ *
+ * @return result of operation - 0 is success
+ */
+static int mt9p031_power_set(struct v4l2_int_device *s, enum v4l2_power power)
+{	
+	struct omap34xxcam_videodev *vdev = s->u.slave->master->priv;
+	switch (power) {
+	case V4L2_POWER_OFF:
+	case V4L2_POWER_STANDBY:
+		isp_set_xclk(vdev->cam->isp, 0, CAM_USE_XCLKA);
+
+		if (regulator_is_enabled(cam_1v8_reg))
+			regulator_disable(cam_1v8_reg);
+		if (regulator_is_enabled(cam_2v8_reg))
+			regulator_disable(cam_2v8_reg);
+		break;
+
+	case V4L2_POWER_ON:
+#if defined(CONFIG_VIDEO_OMAP3) || defined(CONFIG_VIDEO_OMAP3_MODULE)
+		isp_configure_interface(vdev->cam->isp, &mt9p031_if_config);
+#endif
+
+		/* Set RESET_BAR to 0 */
+		gpio_set_value(LEOPARD_RESET_GPIO, 0);
+
+		/* turn on VDD */
+		regulator_enable(cam_1v8_reg);
+
+		mdelay(1);
+
+		/* turn on VDD_IO */
+		regulator_enable(cam_2v8_reg);
+
+		mdelay(50);
+
+		/* Enable EXTCLK */
+		isp_set_xclk(vdev->cam->isp, 24000000, CAM_USE_XCLKA);  //works for 36MHz too; try at lower freq
+
+		/*
+		 * Wait at least 70 CLK cycles (w/EXTCLK = 24MHz):
+		 * ((1000000 * 70) / 24000000) = aprox 2.91 us.
+		 */
+
+		udelay(3);
+
+		/* Set RESET_BAR to 1 */
+		gpio_set_value(LEOPARD_RESET_GPIO, 1);
+
+		/*
+		 * Wait at least 100 CLK cycles (w/EXTCLK = 24MHz):
+		 * ((1000000 * 100) / 24000000) = aprox 4.16 us.
+		 */
+
+		udelay(5);
+
+		break;
+
+	default:
+		return -ENODEV;
+		break;
+	}
+	return 0;
+}
+
+static u32 mt9p031_set_xclk(struct v4l2_int_device *s, u32 xclkfreq)
+{	
+    struct omap34xxcam_videodev *vdev = s->u.slave->master->priv;
+    return isp_set_xclk(vdev->cam->isp, xclkfreq, 0);
+}
+
+
+struct mt9p031_platform_data mt9p031_pdata = {
+	.master		= "omap34xxcam",
+	.power_set	= mt9p031_power_set,
+	.set_xclk       = mt9p031_set_xclk,
+	.priv_data_set	= mt9p031_set_prv_data,
+	.ifparm		= mt9p031_ifparm,
+};
+
+#endif				/* #ifdef CONFIG_SOC_CAMERA_MT9P031 */
 
 static int beagle_cam_probe(struct platform_device *pdev)
 {
