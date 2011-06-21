@@ -87,7 +87,8 @@ obj-$(CONFIG_MACH_OMAP_2430SDP)		+= board-2430sdp.o \
 					   mmc-twl4030.o
 obj-$(CONFIG_MACH_OMAP_APOLLON)		+= board-apollon.o
 obj-$(CONFIG_MACH_OMAP3_BEAGLE)		+= board-omap3beagle.o \
-					   mmc-twl4030.o
+					   mmc-twl4030.o \
+					   board-omap3beagle-camera.o
 obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
 					   mmc-twl4030.o \
 					   board-ldp-camera.o
@@ -130,6 +131,8 @@ obj-$(CONFIG_MACH_OMAP_4430SDP)		+= board-4430sdp.o
 obj-$(CONFIG_MACH_OMAP3517EVM)     	+= board-am3517evm.o \
 					   mmc-am3517evm.o
 
+obj-$(CONFIG_MACH_CRANEBOARD) 		+= board-am3517crane.o \
+					   mmc-am3517crane.o
 # Platform specific device init code
 obj-y					+= usb-musb.o
 obj-$(CONFIG_MACH_OMAP2_TUSB6010)	+= usb-tusb6010.o

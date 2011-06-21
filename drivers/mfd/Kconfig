@@ -129,11 +129,45 @@ config TWL4030_POWER
 	  and load scripts controling which resources are switched off/on
 	  or reset when a sleep, wakeup or warm reset event occurs.
 
+config TPS65910_CORE
+	bool "Texas Instruments TPS65910 Support"
+	depends on I2C=y && GENERIC_HARDIRQS
+	help
+	  Say yes here if you have TPS65910 family chip on your board.
+	  This core driver provides register access and registers devices
+          for the various functions so that function-specific drivers can
+          bind to them.
+
+	  These multi-function chips are found on many AM35xx boards,
+          providing power management, RTC, GPIO features.
+
 config TWL4030_CODEC
 	bool
 	depends on TWL4030_CORE
 	select MFD_CORE
 	default n
+
+
+config TWL4030_MADC
+	tristate "TWL4030 MADC Driver"
+	depends on TWL4030_CORE
+	help
+	  The TWL4030 Monitoring ADC driver enables the host
+	  processor to monitor analog signals using analog-to-digital
+	  conversions on the input source. TWL4030 MADC provides the
+	  following features:
+	   - Single 10-bit ADC with successive approximation register (SAR) conversion;
+	   - Analog multiplexer for 16 inputs;
+	   - Seven (of the 16) inputs are freely available;
+	   - Battery voltage monitoring;
+	   - Concurrent conversion request management;
+	   - Interrupt signal to Primary Interrupt Handler;
+	   - Averaging feature;
+	   - Selective enable/disable of the averaging feature.
+
+	  Say 'y' here to statically link this module into the kernel or 'm'
+	  to build it as a dinamically loadable module. The module will be
+	  called twl4030-madc.ko
 
 config MFD_TMIO
 	bool
