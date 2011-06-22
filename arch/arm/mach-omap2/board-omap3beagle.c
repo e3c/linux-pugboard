@@ -662,6 +662,14 @@ static struct gpio_led gpio_leds[] = {
 		.gpio			= -EINVAL,	/* gets replaced */
 		.active_low		= true,
 	},
+	{
+		.name			= "pugboard::camera",
+		.gpio			= 130,
+	},
+	{
+		.name			= "pugboard::exam_mode",
+        .gpio           = 15,
+	},
 };
 
 static struct gpio_led_platform_data gpio_led_info = {
