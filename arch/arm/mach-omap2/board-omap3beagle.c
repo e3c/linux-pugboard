@@ -71,6 +71,12 @@ static struct omap_opp * _omap35x_l3_rate_table         = NULL;
 static struct omap_opp * _omap37x_l3_rate_table         = NULL;
 #endif  /* CONFIG_PM */
 
+#if defined(CONFIG_SOC_CAMERA_MT9P031)
+#include <media/v4l2-int-device.h>
+#include <media/mt9p031.h>
+extern struct mt9p031_platform_data mt9p031_pdata;
+#endif
+
 #if defined(CONFIG_VIDEO_MT9V113) || defined(CONFIG_VIDEO_MT9V113_MODULE)
 #include <media/v4l2-int-device.h>
 #include <media/mt9v113.h>
@@ -614,6 +620,15 @@ static struct i2c_board_info __initdata beagle_lbcm3m1_i2c2_boardinfo[] = {
 #endif
 };
 
+static struct i2c_board_info __initdata beagle_li5m03_i2c2_boardinfo[] = {
+#if defined(CONFIG_SOC_CAMERA_MT9P031)
+	{
+		I2C_BOARD_INFO("mt9p031", MT9P031_I2C_ADDR),
+		.platform_data	= &mt9p031_pdata,
+	},
+#endif
+};
+
 static int __init omap3_beagle_i2c_init(void)
 {
 	omap_register_i2c_bus(1, 2600, beagle_i2c1_boardinfo,
@@ -636,7 +651,13 @@ static int __init omap3_beagle_i2c_init(void)
 					 " registering i2c2 bus for lbcm3m1\n");
 			omap_register_i2c_bus(2, 400,  beagle_lbcm3m1_i2c2_boardinfo,
 					ARRAY_SIZE(beagle_lbcm3m1_i2c2_boardinfo));
+		} else if (!strcmp(cameraboard_name, "li5m03")) {
+			printk(KERN_INFO "Beagle Leopard 5MP cameraboard:"
+					 " registering i2c2 bus for li5m03\n");
+			omap_register_i2c_bus(2, 400,  beagle_li5m03_i2c2_boardinfo,
+					ARRAY_SIZE(beagle_li5m03_i2c2_boardinfo));
 		} else {
+			printk(KERN_INFO "Unknown cameraboard: %s\n", cameraboard_name);
 			omap_register_i2c_bus(2, 400, NULL, 0);
 		}
 	}
@@ -828,6 +849,10 @@ static struct omap_board_mux board_mux[] __initdata = {
 	OMAP3_MUX(CAM_HS, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
 	OMAP3_MUX(CAM_VS, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
 
+    /* I2C 2 : Mux enabling */
+    OMAP3_MUX(I2C2_SDA, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+    OMAP3_MUX(I2C2_SCL, OMAP_MUX_MODE0 | OMAP_PIN_INPUT_PULLUP),
+
 	/* Camera - Reset GPIO 98 */
 	OMAP3_MUX(CAM_FLD, OMAP_MUX_MODE4 | OMAP_PIN_OUTPUT),
 
@@ -869,6 +894,7 @@ static void __init omap3_beagle_init(void)
 
 	platform_add_devices(omap3_beagle_devices,
 			ARRAY_SIZE(omap3_beagle_devices));
+
 	omap_serial_init();
 
 	omap_mux_init_gpio(170, OMAP_PIN_INPUT);
