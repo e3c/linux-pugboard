@@ -363,12 +363,6 @@ static struct gpio_led gpio_leds[];
 static int beagle_twl_gpio_setup(struct device *dev,
 		unsigned gpio, unsigned ngpio)
 {
-	if (system_rev >= 0x20 && system_rev <= 0x34301000) {
-		omap_mux_init_gpio(23, OMAP_PIN_INPUT);
-		mmc[0].gpio_wp = 23;
-	} else {
-		omap_mux_init_gpio(29, OMAP_PIN_INPUT);
-	}
 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
 	mmc[0].gpio_cd = gpio + 0;
 	twl4030_mmc_init(mmc);
@@ -793,6 +787,18 @@ static struct platform_device keys_gpio = {
 	},
 };
 
+#ifdef CONFIG_PUGBOARD
+static struct platform_device lcd_device = {
+    .name = "lcd_40x2",
+    .id = -1.
+};
+
+static struct platform_device metec_device = {
+    .name = "metec",
+    .id = -1.
+};
+#endif
+
 static struct spi_board_info beaglefpga_mcspi_board_info[] = {
 	// spi 4.0
 	{
@@ -840,6 +846,10 @@ static struct platform_device *omap3_beagle_devices[] __initdata = {
     &pugboard_keyboard,
 	&leds_gpio,
 	&keys_gpio,
+#ifdef CONFIG_PUGBOARD
+    &lcd_device,
+    &metec_device,
+#endif
 	&beagle_dss_device,
 	&beagle_cam_device,
 };
