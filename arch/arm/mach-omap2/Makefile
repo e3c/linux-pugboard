@@ -89,6 +89,8 @@ obj-$(CONFIG_MACH_OMAP_APOLLON)		+= board-apollon.o
 obj-$(CONFIG_MACH_OMAP3_BEAGLE)		+= board-omap3beagle.o \
 					   mmc-twl4030.o \
 					   board-omap3beagle-camera.o
+obj-$(CONFIG_PUGBOARD) += pugboard-metec.o \
+                       pugboard-lcd40x2.o
 obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
 					   mmc-twl4030.o \
 					   board-ldp-camera.o

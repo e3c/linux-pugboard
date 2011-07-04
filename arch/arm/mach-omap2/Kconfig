@@ -67,6 +67,13 @@ config MACH_OMAP3_BEAGLE
 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
 	select OMAP_PACKAGE_CBB
 
+config PUGBOARD 
+    bool "Pugboard Module"
+    default y
+    depends on MACH_OMAP3_BEAGLE 
+    help
+      Say yes here if you are using a pugboard for Beagle. 
+
 config MACH_OMAP_LDP
 	bool "OMAP3 LDP board"
 	depends on ARCH_OMAP3 && ARCH_OMAP34XX
