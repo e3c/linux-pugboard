@@ -403,11 +403,21 @@ static int metec_remove(struct platform_device *pdev)
 
 static int metec_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
+    unsigned long flags;
+
+    spin_lock_irqsave(&metec_lock, flags);
+    gpio_set_value(METEC_SHUTDOWN, 0);
+    spin_unlock_irqrestore(&metec_lock, flags);
 	return 0;
 }
 
 static int metec_resume(struct platform_device *pdev)
 {
+    unsigned long flags;
+
+    spin_lock_irqsave(&metec_lock, flags);
+    gpio_set_value(METEC_SHUTDOWN, 1);
+    spin_unlock_irqrestore(&metec_lock, flags);
 	return 0;
 }
 
