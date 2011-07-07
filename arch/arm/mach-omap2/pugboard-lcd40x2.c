@@ -41,6 +41,7 @@
 
 #undef LCD_DEBUG
 
+spinlock_t lcd_lock;;
 static void put_char(char cmd);
 static void put_cmd(char cmd);
 
@@ -205,6 +206,8 @@ static void lcd_init_write(unsigned char cmd)
 
 static void write_byte(char cmd, char rs)
 {
+    spin_lock(&lcd_lock);
+
     gpio_set_value(LCD_RS, rs);
     gpio_set_value(LCD_RW, 0);
     mdelay(1);
@@ -226,6 +229,8 @@ static void write_byte(char cmd, char rs)
     gpio_set_value(LCD_E, 1);
     mdelay(1);
     gpio_set_value(LCD_E, 0);
+    
+    spin_unlock(&lcd_lock);
 }
 
 static void put_char(char cmd)
@@ -333,11 +338,15 @@ static int lcd_40x2_remove(struct platform_device *pdev)
 
 static int lcd_40x2_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
+    /* turn off display */
+    put_cmd(0x08);
 	return 0;
 }
 
 static int lcd_40x2_resume(struct platform_device *pdev)
 {
+    /* turn on display, cursor */
+    put_cmd(0x0E);
 	return 0;
 }
 
