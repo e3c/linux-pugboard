@@ -1187,7 +1187,6 @@ static void __init omap3_beagle_init(void)
 
 	usb_musb_init();
 	usb_ehci_init(&ehci_pdata);
-	omap3beagle_flash_init();
 
 	/* Ensure SDRC pins are mux'd for self-refresh */
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
