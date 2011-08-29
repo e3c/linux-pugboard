@@ -1,10 +1,8 @@
 /*
- * LCD panel support 40x2 LCD  
+ * METEC braille line driver
  *
- * Copyright (C) 201 E3C Tecnologia Ltda 
- * Author: Dimitri Eberhardt Prado <dprado@e3c.com.br> 
- *
- * Derived from drivers/video/omap/metec-2430sdp.c
+ * Copyright (C) 2011 E3C Tecnologia Ltda
+ * Author: Dimitri Eberhardt Prado <dprado@e3c.com.br>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -44,7 +42,7 @@
 
 #undef METEC_DEBUG
 
-#if NUMBER_OF_LINES > 2 
+#if NUMBER_OF_LINES > 2
 #error Invalid line length
 #endif
 
@@ -55,7 +53,7 @@ struct task_struct* read_thread;
 struct input_dev *input_dev;
 
 static void write_pattern(char* patt);
-static cursor_map[] = {
+static uint32_t cursor_map[] = {
     16,
     17,
     18,
@@ -98,6 +96,50 @@ static cursor_map[] = {
     23
 };
 
+static uint32_t key_map[] = {
+    KEY_Q,
+    KEY_R,
+    KEY_S,
+    KEY_T,
+    KEY_M,
+    KEY_N,
+    KEY_O,
+    KEY_P,
+    KEY_I,
+    KEY_J,
+    KEY_K,
+    KEY_L,
+    KEY_E,
+    KEY_F,
+    KEY_G,
+    KEY_H,
+    KEY_A,
+    KEY_B,
+    KEY_C,
+    KEY_D,
+    KEY_EQUAL,
+    KEY_MINUS,
+    KEY_LEFTBRACE,
+    KEY_RIGHTBRACE,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_Y,
+    KEY_Z,
+    KEY_0,
+    KEY_1,
+    KEY_U,
+    KEY_V,
+    KEY_W,
+    KEY_X
+};
+
+
 static int metec_open(struct inode *inode, struct file *filp)
 {
     if(dev_open)
@@ -127,7 +169,6 @@ void build_pattern(char* buf, char* patt)
 #endif
     for(i = 0; i < NUMBER_OF_LINES; i++)
     {
-        printk("building line %d\n", i);
         patt[0 + (24*(NUMBER_OF_LINES-i-1))] = 0;
         patt[1 + (24*(NUMBER_OF_LINES-i-1))] = (buf[19 + (20*i)] & 0x40) << 1 | (buf[18 + (20*i)] & 0x40) >> 1 | (buf[17 + (20*i)] & 0x40) >> 3 | (buf[16 + (20*i)] & 0x40) >> 5;
         patt[2 + (24*(NUMBER_OF_LINES-i-1))] = (buf[15 + (20*i)] & 0x40) << 1| (buf[14 + (20*i)] & 0x40) >> 1| (buf[13 + (20*i)] & 0x40) >> 3| (buf[12 + (20*i)] & 0x40) >> 5;
@@ -198,12 +239,12 @@ ssize_t metec_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
     if(!dev_open)
         return -EBUSY;
-    char patt[NUMBER_OF_LINES * 24] = {0}; 
+    char patt[NUMBER_OF_LINES * 24] = {0};
     char buffer[NUMBER_OF_LINES * 20] = {0};
     memcpy(buffer, buf, (count>(NUMBER_OF_LINES * 20)?NUMBER_OF_LINES * 20:count));
-    build_pattern(buffer, patt);  
+    build_pattern(buffer, patt);
     write_pattern(patt);
-    return (count<=(NUMBER_OF_LINES * 20)?count:(NUMBER_OF_LINES * 20)); 
+    return (count<=(NUMBER_OF_LINES * 20)?count:(NUMBER_OF_LINES * 20));
 }
 
 struct file_operations metec_fops = {
@@ -249,7 +290,7 @@ static int read_keys(void* data)
     uint32_t i = 0;
     uint32_t j = 0;
     unsigned long flags;
-    
+
     set_current_state(TASK_INTERRUPTIBLE);
     while(!kthread_should_stop())
     {
@@ -267,8 +308,8 @@ static int read_keys(void* data)
                 state <<= 1;
                 state |= gpio_get_value(METEC_DOUT);
                 gpio_set_value(METEC_CLK, 1);
-            } 
-            if(state & 1) 
+            }
+            if(state & 1)
             {
                 cursor_keys |= (uint64_t)1 << i;
             }
@@ -276,7 +317,7 @@ static int read_keys(void* data)
             {
                 cursor_keys &= ~ ((uint64_t)1<< i);
             }
-            if(state & 2) 
+            if(state & 2)
             {
                 front_keys |= (uint64_t)1 << i;
             }
@@ -288,14 +329,27 @@ static int read_keys(void* data)
         udelay(10);
         gpio_set_value(METEC_CLK, 0);
         gpio_set_value(METEC_STROBE, 1);
-        
+
         spin_unlock_irqrestore(&metec_lock, flags);
+        /* set unused bits */
+        cursor_keys |= 0xffffff0000000000;
+        front_keys |= 0xffffff0000000000;
 
         if(front_keys != last_front_keys)
         {
+            uint32_t k = 0;
     #ifdef METEC_DEBUG
             printk("METEC frontkeys changed from %llx to %llx\n", last_front_keys, front_keys);
     #endif
+            uint64_t diff_map = last_front_keys ^ front_keys;
+            for(k = 0; k < NUMBER_OF_LINES*20; k++)
+            {
+                if(diff_map & ((uint64_t)1 << k))
+                {
+                    input_report_key(input_dev, key_map[k], (~front_keys & ((uint64_t)1 << k)?1:0));
+                }
+            }
+
             last_front_keys = front_keys;
         }
 
@@ -367,22 +421,33 @@ static int metec_probe(struct platform_device *pdev)
     gpio_set_value(METEC_STROBE, 0);
     gpio_set_value(METEC_CLK, 0);
     mdelay(1);
-    
+
     char patt[48] = { 0 };
     write_pattern(patt);
 
     input_dev = input_allocate_device();
+    if (!input_dev)
+    {
+        err = -ENOMEM;
+        goto err_free_mem;
+    }
 
     input_dev->name     = "metec-keys";
     input_dev->id.bustype   = BUS_HOST;
-    input_dev->evbit[0] = BIT_MASK(EV_MSC); 
+    input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP) | BIT_MASK(EV_MSC);
     input_dev->mscbit[0] = BIT(MSC_RAW);
+    int i = 0;
+    for(; i < 20*NUMBER_OF_LINES; i++)
+    {
+        set_bit(key_map[i],  input_dev->keybit);
+    }
 
     err = input_register_device(input_dev);
     if (err)
         goto err_free_mem;
 
-    read_thread = kthread_run(read_keys, 0, "metec_keys");    
+
+    read_thread = kthread_run(read_keys, 0, "metec_keys");
 
 	return 0;
 
