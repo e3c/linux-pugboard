@@ -241,7 +241,6 @@ static void put_char(char cmd)
     write_byte(cmd, 1);
     if(cur_line == 1)
     {
-        printk("2nd col %d char %x\n", cur_col, cmd);
         second_line[cur_col] = cmd;
     }
     cur_col++;
@@ -324,9 +323,80 @@ static int lcd_40x2_probe(struct platform_device *pdev)
     put_cmd(0x06);
     /* turn on display, cursor */
     put_cmd(0x0E);
+
+    /* temporary hack to add ã and ç to CGRAM */
+    put_cmd(0x40);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x00);
+
+    /* ç */
+    put_char(0x00);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x10);
+    put_char(0x11);
+    put_char(0x0E);
+    put_char(0x04);
+    put_char(0x0C);
+
+    /* ã */
+    put_char(0x0D);
+    put_char(0x12);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x01);
+    put_char(0x0F);
+    put_char(0x11);
+    put_char(0x0F);
+
+    /* á */
+    put_char(0x02);
+    put_char(0x04);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x01);
+    put_char(0x0F);
+    put_char(0x11);
+    put_char(0x0F);
+
+    /* é */
+    put_char(0x02);
+    put_char(0x04);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x11);
+    put_char(0x1F);
+    put_char(0x10);
+    put_char(0x0E);
+
+    /* ê */
+    put_char(0x04);
+    put_char(0x0A);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x11);
+    put_char(0x1F);
+    put_char(0x10);
+    put_char(0x0E);
+
+    /* ó */
+    put_char(0x00);
+    put_char(0x02);
+    put_char(0x04);
+    put_char(0x00);
+    put_char(0x0E);
+    put_char(0x11);
+    put_char(0x11);
+    put_char(0x0E);
+
     /* go home */
     put_cmd(0x02);
-
 	return 0;
 }
 
