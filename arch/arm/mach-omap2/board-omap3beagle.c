@@ -71,6 +71,8 @@ static struct omap_opp * _omap35x_l3_rate_table         = NULL;
 static struct omap_opp * _omap37x_l3_rate_table         = NULL;
 #endif  /* CONFIG_PM */
 
+#define LCD_I2C_ADDR         ( 0x78 >> 1 )
+
 #if defined(CONFIG_SOC_CAMERA_MT9P031)
 #include <media/v4l2-int-device.h>
 #include <media/mt9p031.h>
@@ -614,7 +616,10 @@ static struct i2c_board_info __initdata beagle_lbcm3m1_i2c2_boardinfo[] = {
 #endif
 };
 
-static struct i2c_board_info __initdata beagle_li5m03_i2c2_boardinfo[] = {
+static struct i2c_board_info __initdata beagle_li5m03_lcd_i2c2_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("lcdpug", LCD_I2C_ADDR),
+	},
 #if defined(CONFIG_SOC_CAMERA_MT9P031)
 	{
 		I2C_BOARD_INFO("mt9p031", MT9P031_I2C_ADDR),
@@ -647,9 +652,9 @@ static int __init omap3_beagle_i2c_init(void)
 					ARRAY_SIZE(beagle_lbcm3m1_i2c2_boardinfo));
 		} else if (!strcmp(cameraboard_name, "li5m03")) {
 			printk(KERN_INFO "Beagle Leopard 5MP cameraboard:"
-					 " registering i2c2 bus for li5m03\n");
-			omap_register_i2c_bus(2, 400,  beagle_li5m03_i2c2_boardinfo,
-					ARRAY_SIZE(beagle_li5m03_i2c2_boardinfo));
+					 " registering i2c2 bus for li5m03 and LCD %x\n",  ARRAY_SIZE(beagle_li5m03_lcd_i2c2_boardinfo));
+			omap_register_i2c_bus(2, 100,  beagle_li5m03_lcd_i2c2_boardinfo,
+					ARRAY_SIZE(beagle_li5m03_lcd_i2c2_boardinfo));
 		} else {
 			printk(KERN_INFO "Unknown cameraboard: %s\n", cameraboard_name);
 			omap_register_i2c_bus(2, 400, NULL, 0);
