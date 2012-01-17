@@ -49,15 +49,6 @@ static struct char_map_list{
     struct list_head list;
 } char_map;
 
-#if 0
-#define CHAR_MAP_SIZE 3 
-static char* char_map[CHAR_MAP_SIZE][2] = { 
-        {"\x0a", ""},
-        {"\x0d", ""},
-        {"\xc3\x87", "\xc7"} /* Ç */  
-        }; 
-#endif
-
 static int major = 0;
 static int dev_open = false;
 
