@@ -67,9 +67,9 @@ static ssize_t char_map_show(struct device *dev,
     list_for_each(pos, &char_map.list)
     {
         tmp = list_entry(pos, struct char_map_list, list);
-        count += sprintf(buf+count, "cmap: %s\n", tmp->map);
+        count += snprintf(buf+count, PAGE_SIZE - count, "cmap: %s\n", tmp->map);
     }
-    return count + sprintf(buf+count, "OK: %d\n", 1);
+    return count; 
 }
 
 static ssize_t char_map_remove(struct device *dev,
