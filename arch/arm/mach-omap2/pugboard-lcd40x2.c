@@ -1,7 +1,7 @@
 /*
  * LCD panel support 40x2 LCD  
  *
- * Copyright (C) 201 E3C Tecnologia Ltda 
+ * Copyright (C) 2011 E3C Tecnologia Ltda 
  * Author: Dimitri Eberhardt Prado <dprado@e3c.com.br> 
  *
  * Derived from drivers/video/omap/lcd-2430sdp.c
@@ -41,7 +41,7 @@
 
 #undef LCD_DEBUG
 
-spinlock_t lcd_lock;;
+static spinlock_t lcd_lock;;
 static void put_char(char cmd);
 static void put_cmd(char cmd);
 
@@ -167,7 +167,7 @@ static int translate(char* in)
     return 1;
 }
 
-ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
     int i = 0;
     while((i < 80) && (i < count))
@@ -181,7 +181,7 @@ ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
     return count; 
 }
 
-struct file_operations lcd_fops = {
+static struct file_operations lcd_fops = {
   write: lcd_write,
   open: lcd_open,
   release: lcd_release
