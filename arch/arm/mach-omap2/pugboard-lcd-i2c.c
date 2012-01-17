@@ -67,7 +67,7 @@ static ssize_t char_map_show(struct device *dev,
     list_for_each(pos, &char_map.list)
     {
         tmp = list_entry(pos, struct char_map_list, list);
-        count += snprintf(buf+count, PAGE_SIZE - count, "%s => %x\n", tmp->key, tmp->map[0]);
+        count += snprintf(buf+count, PAGE_SIZE - count, "%s => %x%x%x%x%x%x%x%x\n", tmp->key, tmp->map[7], tmp->map[6], tmp->map[5], tmp->map[4], tmp->map[3], tmp->map[2], tmp->map[1], tmp->map[0]);
     }
     return count; 
 }
@@ -77,39 +77,23 @@ static ssize_t char_map_remove(struct device *dev,
                    const char *buf, size_t n)
 {
     struct char_map_list *tmp;
-    struct list_head *pos;
+    struct list_head *q, *pos;
 
-    char* read_key = buf;
-    unsigned int read_hex;
-    unsigned char key[7];
-    int i = 0;
-
-    for(i = 0; i < (strlen(read_key)>14?14:strlen(read_key)); i+=2)
-    {
-        printk(KERN_EMERG "%c %d\n", read_key[i],i);
-        if(read_key[i] == '\n') break; 
-        if (sscanf(read_key+i, "%x", &read_hex) != 1) {
-            printk(KERN_EMERG "lcdpug: wrong key format, must be HH[HH[HH[HH[HH[HH]]]]]\n");
-            return -EINVAL;
-        }
-        key[i/2] = (unsigned char)read_hex;
-    }
-
-    list_for_each(pos, &char_map.list)
+    list_for_each_safe(pos, q, &char_map.list)
     {
         tmp = list_entry(pos, struct char_map_list, list);
-        if(strcmp(tmp->key, key) == 0)
+        if(strncmp(tmp->key, buf, n) == 0)
         {
             kfree(tmp->key);
             kfree(tmp->map);
-            list_del(tmp);
+            list_del(pos);
             kfree(tmp);
-            printk(KERN_EMERG "removed key %s\n", read_key);
+            printk(KERN_EMERG "removed key %s\n", buf);
             return n;
         }
 
     }
-    printk(KERN_EMERG "key %s not found\n", read_key);
+    printk(KERN_EMERG "key %s not found\n", buf);
     return n; 
 }
 
@@ -124,36 +108,39 @@ static ssize_t char_map_store(struct device *dev,
             printk(KERN_EMERG "lcdpug: wrong key/map format, missing comma\n");
             return -EINVAL;
     }
+
     unsigned char* key = (char*)kmalloc((strlen(read_key) - strlen(read_map))/2, GFP_KERNEL);
-    unsigned char* map = (char*)kmalloc(strlen(read_map+1)/2 + 1, GFP_KERNEL);
+    unsigned char* map = (char*)kmalloc(9, GFP_KERNEL);
     printk(KERN_EMERG "Malloced map %p\n", map);
     printk(KERN_EMERG "Malloced key %p\n", key);
-    unsigned int read_hex;
-
+    unsigned long long hex;
     int i = 0;
-    for(i = 0 ; i < strlen(read_map); i+=2)
-    {
-        printk(KERN_EMERG "%d\n", i);
-        if (sscanf(read_map+i, "%x", &read_hex) != 1) {
-            printk(KERN_EMERG "lcdpug: wrong map format, must be HH[HH[HH[HH[HH[HH]]]]]\n");
-            return -EINVAL;
-        }
-        printk(KERN_EMERG "read %d %x\n", i, read_hex);
-        map[i/2] = (unsigned char)read_hex;
+    if (sscanf(read_map+i, "%llx", &hex) != 1) {
+        printk(KERN_EMERG "lcdpug: wrong map format, must be 8*HH\n");
+        return -EINVAL;
     }
-    map[i/2] = 0;
+    printk(KERN_EMERG "read %d %llx\n", i, hex);
+    memcpy(map, &hex, 8);
+    map[8] = 0;
 
-    for(i = 0; i < strlen(read_key) - strlen(read_map) - 1; i+=2)
+    strncpy(key, read_key, read_map - read_key - 1);
+
+    /* remove old key */
+    struct char_map_list *tmp;
+    struct list_head *q, *pos;
+    list_for_each_safe(pos, q, &char_map.list)
     {
-        printk(KERN_EMERG "%d\n", i);
-        if (sscanf(read_key+i, "%x", &read_hex) != 1) {
-            printk(KERN_EMERG "lcdpug: wrong key format, must be HH[HH[HH[HH[HH[HH]]]]]\n");
-            return -EINVAL;
+        tmp = list_entry(pos, struct char_map_list, list);
+        if(strncmp(tmp->key, key, strlen(key)) == 0)
+        {
+            kfree(tmp->key);
+            kfree(tmp->map);
+            list_del(pos);
+            kfree(tmp);
+            printk(KERN_EMERG "removed previous key %s\n", key);
+            break;
         }
-        printk(KERN_EMERG "read %d %x\n", i, read_hex);
-        key[i/2] = (unsigned char)read_hex;
     }
-    key[i/2] = 0;
 
     struct char_map_list* tmp_item = (struct char_map_list*)kmalloc(sizeof(struct char_map_list), GFP_KERNEL);
     printk(KERN_EMERG "Malloced item %p\n", tmp_item);
