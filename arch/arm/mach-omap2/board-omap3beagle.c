@@ -83,6 +83,8 @@ extern struct mt9v113_platform_data mt9v113_pdata;
 extern struct mt9t112_platform_data mt9t112_pdata;
 #endif
 
+#define LCD_I2C_ADDR         ( 0x78 >> 1 )
+
 #if defined(CONFIG_SOC_CAMERA_MT9P031) || defined(CONFIG_SOC_CAMERA_MT9P031_MODULE)
 #include <media/v4l2-int-device.h>
 #include <media/mt9p031.h>
@@ -770,7 +772,10 @@ static struct i2c_board_info __initdata beagle_lbcm3m1_i2c2_boardinfo[] = {
 #endif
 };
 
-static struct i2c_board_info __initdata beagle_lbcm5m03_i2c2_boardinfo[] = {
+static struct i2c_board_info __initdata beagle_lbcm5m03_lcd_i2c2_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("lcdpug", LCD_I2C_ADDR),
+	},
 #if defined(CONFIG_SOC_CAMERA_MT9P031) || defined(CONFIG_SOC_CAMERA_MT9P031_MODULE)		
 	{
 		I2C_BOARD_INFO("mt9p031", MT9P031_I2C_ADDR),
@@ -803,9 +808,9 @@ static int __init omap3_beagle_i2c_init(void)
 					ARRAY_SIZE(beagle_lbcm3m1_i2c2_boardinfo));
 		} else if (!strcmp(cameraboard_name, "lbcm5m03")) {
 			printk(KERN_INFO "Beagle cameraboard:"
-					" registering i2c2 bus for lbcm5m03\n");
-			omap_register_i2c_bus(2, 400,  beagle_lbcm5m03_i2c2_boardinfo,
-					ARRAY_SIZE(beagle_lbcm5m03_i2c2_boardinfo));
+					" registering i2c2 bus for lbcm5m03 and LCD\n");
+			omap_register_i2c_bus(2, 400,  beagle_lbcm5m03_lcd_i2c2_boardinfo,
+					ARRAY_SIZE(beagle_lbcm5m03_lcd_i2c2_boardinfo));
 		} else {
 			omap_register_i2c_bus(2, 400, NULL, 0);
 		}
