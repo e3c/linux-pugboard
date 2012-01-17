@@ -529,7 +529,7 @@ static int lcd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
     res = i2c_master_send(client, "\x00\x39", 2);
     printk("master_send returned %d\n", res);
     mdelay(10);
-    res = i2c_master_send(client, "\x00\x14\x78\x5e\x6d\x0c\x01\x06", 8);
+    res = i2c_master_send(client, "\x80\x14\x80\x78\x80\x5e\x80\x6d\x80\x0c\x80\x01\x00\x06", 14);
     printk("master_send returned %d\n", res);
     mdelay(10);
 	return 0;
