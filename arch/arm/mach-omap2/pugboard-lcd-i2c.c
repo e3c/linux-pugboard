@@ -160,49 +160,29 @@ static int lcd_release(struct inode *inode, struct file *filp)
 
 static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_idx)
 {
-
-
-
-#if 0
-    int i = 0;
-    int j = 0;
-#ifdef LCD_DEBUG
-    printk("translating %x\n", in[0]);
-#endif
-    for(i = 0; i < CHAR_MAP_SIZE; i++)
+    unsigned char alternate = 0;
+    unsigned long long map = 0;
+    struct char_map_list *tmp;
+    struct list_head *pos;
+    list_for_each(pos, &char_map.list)
     {
-        if(memcmp(char_map[i][0], in, strlen(char_map[i][0]))==0)
+        tmp = list_entry(pos, struct char_map_list, list);
+        if(strncmp(tmp->key,&(in_buffer[*in_idx]), strlen(tmp->key))==0)
         {
-#ifdef LCD_DEBUG
-            printk("found match on index %d %x == in %x\n", i, char_map[i][0][0], in[0]);
-#endif
-
-            /* special case for \f (form feed) */
-            if(in[0] == 0x0c)
+            if(!tmp->map)
             {
-                new_line();
-                new_line();
+                /* direct translation */
+                out_buffer[(*out_idx)++] = tmp->alternate;
+                *in_idx += strlen(tmp->key);
+                return;
             }
-            /* special case for \n */
-            if(in[0] == 0x0a)
+            else
             {
-                new_line();
+                printk(KERN_EMERG "CGRAM mappings not implemented!\n");
             }
-            /* special case for \r */
-            if(in[0] == 0x0d)
-            {
-                carriage_return();   
-            }
-
-            for(j = 0; j < strlen(char_map[i][1]); j++)
-            {
-                put_char(char_map[i][1][j]);
-            }
-            return strlen(char_map[i][0]);
         }
     }
-    put_char(in[0]);
-#endif
+
     out_buffer[(*out_idx)++] = in_buffer[(*in_idx)++];
 }
 
