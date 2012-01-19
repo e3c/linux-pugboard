@@ -41,8 +41,8 @@ struct i2c_client* lcd_client = NULL;
 
 static struct char_map_list{
     char* key;
-    char* map;
-    char alternate;
+    unsigned long long  map;
+    unsigned char alternate;
     struct list_head list;
 } char_map;
 
@@ -59,7 +59,7 @@ static ssize_t char_map_show(struct device *dev,
     list_for_each(pos, &char_map.list)
     {
         tmp = list_entry(pos, struct char_map_list, list);
-        count += snprintf(buf+count, PAGE_SIZE - count, "%s => %x%x%x%x%x%x%x%x,%x\n", tmp->key, tmp->map[7], tmp->map[6], tmp->map[5], tmp->map[4], tmp->map[3], tmp->map[2], tmp->map[1], tmp->map[0], tmp->alternate);
+        count += snprintf(buf+count, PAGE_SIZE - count, "%s => %llx,%x\n", tmp->key, tmp->map, tmp->alternate);
     }
     return count; 
 }
@@ -77,7 +77,6 @@ static ssize_t char_map_remove(struct device *dev,
         if(strncmp(tmp->key, buf, n) == 0)
         {
             kfree(tmp->key);
-            kfree(tmp->map);
             list_del(pos);
             kfree(tmp);
             printk(KERN_EMERG "removed key %s\n", buf);
@@ -96,11 +95,9 @@ static ssize_t char_map_store(struct device *dev,
     const char* read_key = buf;
     char* read_map = strchr(buf, ',') + 1;
     unsigned char* key = (char*)kmalloc((strlen(read_key) - strlen(read_map))/2, GFP_KERNEL);
-    unsigned char* map = (char*)kmalloc(9, GFP_KERNEL);
     struct char_map_list *tmp;
     struct list_head *q, *pos;
     struct char_map_list* tmp_item = (struct char_map_list*)kmalloc(sizeof(struct char_map_list), GFP_KERNEL);
-    unsigned long long hex = 0;
     unsigned int alt;
     int i = 0;
 
@@ -109,26 +106,14 @@ static ssize_t char_map_store(struct device *dev,
             printk(KERN_EMERG "lcdpug: wrong key/map format, missing comma\n");
             return -EINVAL;
     }
-    printk(KERN_EMERG "Malloced map %p\n", map);
     printk(KERN_EMERG "Malloced key %p\n", key);
-    if (sscanf(read_map+i, "%llx,%x", &hex,&alt) != 2) {
+    tmp_item->map = 0;
+    if (sscanf(read_map+i, "%llx,%x", &tmp_item->map, &alt) != 2) {
         if(sscanf(read_map+i, ",%x", &alt) != 1){
             printk(KERN_EMERG "lcdpug: wrong map format, must be 8*HH\n");
             return -EINVAL;
         }
     }
-    if(hex)
-    {
-        printk(KERN_EMERG "read %d %llx\n", i, hex);
-        memcpy(map, &hex, 8);
-        map[8] = 0;
-    }
-    else
-    {
-        printk(KERN_EMERG "no map supplied, using simple translantion rule\n");
-        memset(map, 0, 9);
-    }
-
     strncpy(key, read_key, read_map - read_key - 1);
 
     /* remove old key */
@@ -138,7 +123,6 @@ static ssize_t char_map_store(struct device *dev,
         if(strncmp(tmp->key, key, strlen(key)) == 0)
         {
             kfree(tmp->key);
-            kfree(tmp->map);
             list_del(pos);
             kfree(tmp);
             printk(KERN_EMERG "removed previous key %s\n", key);
@@ -148,8 +132,7 @@ static ssize_t char_map_store(struct device *dev,
 
     printk(KERN_EMERG "Malloced item %p\n", tmp_item);
     tmp_item->key = key;
-    tmp_item->map = map;
-    tmp_item->alternate = alt;
+    tmp_item->alternate = (unsigned char)alt;
     printk(KERN_EMERG "Adding to list\n");
     list_add(&tmp_item->list, &char_map.list);
     return n;
