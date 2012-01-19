@@ -158,8 +158,11 @@ static int lcd_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
-static int translate(char* in)
+static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_idx)
 {
+
+
+
 #if 0
     int i = 0;
     int j = 0;
@@ -200,17 +203,70 @@ static int translate(char* in)
     }
     put_char(in[0]);
 #endif
-    return 1;
+    out_buffer[(*out_idx)++] = in_buffer[(*in_idx)++];
 }
+
+static char write_buffer[40] = {0};
+static int write_buffer_idx = 0;
 
 static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
 {
     int i = 0;
     int res = 0;
-    char tmp[80];
-    printk("lcd write\n");
-    while((i < 39) && (i < count - 1))
+    char buffer[42];
+    printk(KERN_EMERG "write_buffer_idx: %d count: %d write_buffer:[%s]\n", write_buffer_idx, count, write_buffer);
+    while((write_buffer_idx < 40) && (i < count))
     {
+        if(buf[i] == '\n')
+        {
+            printk(KERN_EMERG "got flush! write_buffer_idx: %d i: %d write_buffer: [%s]\n", write_buffer_idx, i, write_buffer);
+             break;
+        }
+        translate(write_buffer, &write_buffer_idx, buf, &i);
+        //write_buffer[write_buffer_idx++] = buf[i++];
+    }
+    if((buf[i] == '\n') || (write_buffer_idx >= 40))
+    {
+        /* got flush let´s print*/
+        buffer[0] = 0x80;
+        buffer[1] = 0x80; /* position on 0x0 */
+        for( i = 0; i < 19; i++)
+        {
+            buffer[i*2 + 2] = 0xc0;
+            buffer[i*2 + 3] = write_buffer[i];
+        }
+        buffer[40] = 0x40;
+        buffer[41] = write_buffer[19];
+        res = i2c_master_send(lcd_client, buffer, 42);
+        if(res != 42)
+        {
+            udelay(10);
+            printk(KERN_EMERG "retrying send\n");
+            res = i2c_master_send(lcd_client, buffer, 42);
+        }
+        printk(KERN_EMERG "write res1 %d\n", res);
+
+        buffer[0] = 0x80;
+        buffer[1] = 0xc0; /* position on 1x0 */
+        for( i = 0; i < 19; i++)
+        {
+            buffer[i*2 + 2] = 0xc0;
+            buffer[i*2 + 3] = write_buffer[i+20];
+        }
+        buffer[40] = 0x40;
+        buffer[41] = write_buffer[39];
+        res = i2c_master_send(lcd_client, buffer, 42);
+        if(res != 42)
+        {
+            udelay(10);
+            printk(KERN_EMERG "retrying send\n");
+            res = i2c_master_send(lcd_client, buffer, 42);
+        }
+        printk(KERN_EMERG "write res2 %d\n", res);
+
+        write_buffer_idx = 0;
+        memset(write_buffer,0,40);
+    }
 #if 0
         int res = translate(&buf[i]);
 #ifdef LCD_DEBUG
@@ -218,14 +274,7 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
 #endif
         i += res;
 #endif
-        tmp[i*2] = 0xc0;
-        tmp[(i*2)+1] = buf[i];     
-        i++;
-    } 
-    tmp[i*2] = 0x40;
-    tmp[(i*2)+1] = buf[i];
-    res = i2c_master_send(lcd_client, tmp, (i*2) + 2);
-    printk(KERN_EMERG "write res %d\n", res);
+
     return count; 
 }
 
