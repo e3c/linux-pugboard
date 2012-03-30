@@ -349,10 +349,19 @@ static struct twl4030_hsmmc_info mmc[] = {
 		.transceiver	= true,
 		.ocr_mask	= 0x00100000,	/* 3.3V */
 	},
+	{
+		.mmc		= 3,
+		.wires		= 4,
+		.ocr_mask	= 0x00100000,	/* 3.3V */
+	},
 	{}	/* Terminator */
 };
 
 static struct regulator_consumer_supply beagle_vmmc1_supply = {
+	.supply			= "vmmc",
+};
+
+static struct regulator_consumer_supply beagle_vmmc2_supply = {
 	.supply			= "vmmc",
 };
 
@@ -367,11 +376,15 @@ static int beagle_twl_gpio_setup(struct device *dev,
 {
 	/* gpio + 0 is "mmc0_cd" (input/IRQ) */
 	mmc[0].gpio_cd = gpio + 0;
+
+    mmc[2].gpio_cd = 21; 
+
 	twl4030_mmc_init(mmc);
 
 	/* link regulators to MMC adapters */
 	beagle_vmmc1_supply.dev = mmc[0].dev;
 	beagle_vsim_supply.dev = mmc[0].dev;
+    beagle_vmmc2_supply.dev = mmc[2].dev;
 
 	/* REVISIT: need ehci-omap hooks for external VBUS
 	 * power switch and overcurrent detect
@@ -493,6 +506,22 @@ static struct regulator_init_data beagle_vsim = {
 	.consumer_supplies	= &beagle_vsim_supply,
 };
 
+/* VMMC2 for MMC3 */
+static struct regulator_init_data beagle_vmmc2 = {
+    .constraints = {
+        .min_uV         = 3150000,
+        .max_uV         = 3150000,
+        .apply_uV       = true,
+        .valid_modes_mask   = REGULATOR_MODE_NORMAL
+                    | REGULATOR_MODE_STANDBY,
+        .valid_ops_mask     = REGULATOR_CHANGE_VOLTAGE
+                    | REGULATOR_CHANGE_MODE
+                    | REGULATOR_CHANGE_STATUS,
+    },
+    .num_consumer_supplies  = 1,
+    .consumer_supplies  = &beagle_vmmc2_supply,
+};
+
 /* VDAC for DSS driving S-Video (8 mA unloaded, max 65 mA) */
 static struct regulator_init_data beagle_vdac = {
 	.constraints = {
@@ -549,6 +578,7 @@ static struct twl4030_platform_data beagle_twldata = {
 	.codec		= &beagle_codec_data,
 	.madc		= &beagle_madc_data,
 	.vmmc1		= &beagle_vmmc1,
+	.vmmc2		= &beagle_vmmc2,
 	.vsim		= &beagle_vsim,
 	.vdac		= &beagle_vdac,
 	.vpll2		= &beagle_vpll2,
