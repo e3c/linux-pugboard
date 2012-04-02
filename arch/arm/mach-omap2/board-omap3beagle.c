@@ -713,13 +713,25 @@ static struct gpio_led gpio_leds[] = {
 		.active_low		= true,
 	},
 	{
-		.name			= "pugboard::camera",
-		.gpio			= 130,
-	},
-	{
 		.name			= "pugboard::exam_mode",
         .gpio           = 15,
 	},
+    {
+        .name           = "pugboard::camera0",
+        .gpio           = 144,
+    },
+    {
+         .name          = "pugboard::camera1",
+         .gpio          = 146,
+    },
+    {
+         .name          = "pugboard::camera2",
+         .gpio          = 143,
+    },
+    {
+         .name          = "pugboard::camera3",
+         .gpio          = 145,
+    }
 };
 
 static struct gpio_led_platform_data gpio_led_info = {
