@@ -735,71 +735,6 @@ static struct platform_device leds_gpio = {
 	},
 };
 
-static const uint32_t pugboard_matrix_keys[] = {
-    KEY(0, 0, KEY_A),
-    KEY(0, 1, KEY_B),
-    KEY(0, 2, KEY_C),
-    KEY(0, 3, KEY_D),
-    KEY(0, 4, KEY_E),
-
-    KEY(1, 0, KEY_F),
-    KEY(1, 1, KEY_G),
-    KEY(1, 2, KEY_H),
-    KEY(1, 3, KEY_I),
-    KEY(1, 4, KEY_J),
-
-    KEY(2, 0, KEY_K),
-    KEY(2, 1, KEY_L),
-    KEY(2, 2, KEY_M),
-    KEY(2, 3, KEY_N),
-    KEY(2, 4, KEY_O),
-
-    KEY(3, 0, KEY_P),
-    KEY(3, 1, KEY_Q),
-    KEY(3, 2, KEY_R),
-    KEY(3, 3, KEY_S),
-    KEY(3, 4, KEY_T),
-
-    KEY(4, 0, KEY_U),
-    KEY(4, 1, KEY_V),
-    KEY(4, 2, KEY_W),
-    KEY(4, 3, KEY_X),
-    KEY(4, 4, KEY_Y),
-};
-
-const struct matrix_keymap_data pugboard_keymap_data = {
-    .keymap         = pugboard_matrix_keys,
-    .keymap_size        = ARRAY_SIZE(pugboard_matrix_keys),
-};
-
-const static unsigned int pugboard_keypad_row_gpios[] = {
-    135,134,133,132,131
-};
-
-const static unsigned int pugboard_keypad_col_gpios[] = {
-    157,139,138,137,136
-};
-
-static struct matrix_keypad_platform_data pugboard_keypad_platform_data = {
-    .keymap_data    = &pugboard_keymap_data,
-    .row_gpios  = pugboard_keypad_row_gpios,
-    .num_row_gpios  = ARRAY_SIZE(pugboard_keypad_row_gpios),
-    .col_gpios  = pugboard_keypad_col_gpios,
-    .num_col_gpios  = ARRAY_SIZE(pugboard_keypad_col_gpios),
-    .active_low = 1,
-
-    .debounce_ms        = 20,
-    .col_scan_delay_us  = 5,
-};
-
-static struct platform_device pugboard_keyboard = {
-    .name   = "matrix-keypad",
-    .id = -1,
-    .dev    = {
-        .platform_data = &pugboard_keypad_platform_data,
-    },
-};
-
 static struct gpio_keys_button gpio_buttons[] = {
 	{
 		.code			= BTN_EXTRA,
@@ -878,7 +813,6 @@ static void __init omap3_beagle_init_irq(void)
 }
 
 static struct platform_device *omap3_beagle_devices[] __initdata = {
-    &pugboard_keyboard,
 	&leds_gpio,
 	&keys_gpio,
 #ifdef CONFIG_PUGBOARD
