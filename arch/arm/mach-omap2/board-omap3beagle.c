@@ -913,11 +913,6 @@ static struct platform_device keys_gpio = {
 };
 
 #ifdef CONFIG_PUGBOARD
-static struct platform_device lcd_device = {
-    .name = "lcd_40x2",
-    .id = -1.
-};
-
 static struct platform_device metec_device = {
     .name = "metec",
     .id = -1.
@@ -971,7 +966,6 @@ static struct platform_device *omap3_beagle_devices[] __initdata = {
 	&leds_gpio,
 	&keys_gpio,
 #ifdef CONFIG_PUGBOARD
-    &lcd_device,
     &metec_device,
 #endif
 	&beagle_dss_device,
