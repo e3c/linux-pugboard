@@ -236,104 +236,6 @@ static struct platform_device omap3beagle_nand_device = {
 	.resource	= &omap3beagle_nand_resource,
 };
 
-/* DSS */
-
-static int beagle_enable_dvi(struct omap_dss_device *dssdev)
-{
-	if (dssdev->reset_gpio != -1)
-		gpio_set_value(dssdev->reset_gpio, 1);
-
-	return 0;
-}
-
-static void beagle_disable_dvi(struct omap_dss_device *dssdev)
-{
-	if (dssdev->reset_gpio != -1)
-		gpio_set_value(dssdev->reset_gpio, 0);
-}
-
-static struct omap_dss_device beagle_dvi_device = {
-	.type = OMAP_DISPLAY_TYPE_DPI,
-	.name = "dvi",
-	.driver_name = "generic_panel",
-	.phy.dpi.data_lines = 24,
-	.reset_gpio = 170,
-	.platform_enable = beagle_enable_dvi,
-	.platform_disable = beagle_disable_dvi,
-};
-
-static int beagle_panel_enable_tv(struct omap_dss_device *dssdev)
-{
-#define ENABLE_VDAC_DEDICATED           0x03
-#define ENABLE_VDAC_DEV_GRP             0x20
-
-	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
-			ENABLE_VDAC_DEDICATED,
-			TWL4030_VDAC_DEDICATED);
-	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER,
-			ENABLE_VDAC_DEV_GRP, TWL4030_VDAC_DEV_GRP);
-
-	return 0;
-}
-
-static void beagle_panel_disable_tv(struct omap_dss_device *dssdev)
-{
-	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
-			TWL4030_VDAC_DEDICATED);
-	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0x00,
-			TWL4030_VDAC_DEV_GRP);
-}
-
-static struct omap_dss_device beagle_tv_device = {
-	.name = "tv",
-	.driver_name = "venc",
-	.type = OMAP_DISPLAY_TYPE_VENC,
-	.phy.venc.type = OMAP_DSS_VENC_TYPE_SVIDEO,
-	.platform_enable = beagle_panel_enable_tv,
-	.platform_disable = beagle_panel_disable_tv,
-};
-
-static struct omap_dss_device *beagle_dss_devices[] = {
-	&beagle_dvi_device,
-	&beagle_tv_device,
-};
-
-static struct omap_dss_board_info beagle_dss_data = {
-	.num_devices = ARRAY_SIZE(beagle_dss_devices),
-	.devices = beagle_dss_devices,
-	.default_device = &beagle_dvi_device,
-};
-
-static struct platform_device beagle_dss_device = {
-	.name          = "omapdss",
-	.id            = -1,
-	.dev            = {
-		.platform_data = &beagle_dss_data,
-	},
-};
-
-static struct regulator_consumer_supply beagle_vdac_supply = {
-	.supply		= "vdda_dac",
-	.dev		= &beagle_dss_device.dev,
-};
-
-static struct regulator_consumer_supply beagle_vdvi_supply = {
-	.supply		= "vdds_dsi",
-	.dev		= &beagle_dss_device.dev,
-};
-
-static void __init beagle_display_init(void)
-{
-	int r;
-
-	r = gpio_request(beagle_dvi_device.reset_gpio, "DVI reset");
-	if (r < 0) {
-		printk(KERN_ERR "Unable to get DVI reset GPIO\n");
-		return;
-	}
-
-	gpio_direction_output(beagle_dvi_device.reset_gpio, 0);
-}
 
 #include "sdram-micron-mt46h32m32lf-6.h"
 
@@ -391,10 +293,6 @@ static int beagle_twl_gpio_setup(struct device *dev,
 	 */
 
 	if (cpu_is_omap3630()) {
-		/* Power on DVI, Serial and PWR led */
- 		gpio_request(gpio + 1, "nDVI_PWR_EN");
-		gpio_direction_output(gpio + 1, 0);
-
 		/* Power on camera interface */
 		gpio_request(gpio + 2, "CAM_EN");
 		gpio_direction_output(gpio + 2, 1);
@@ -522,35 +420,6 @@ static struct regulator_init_data beagle_vmmc2 = {
     .consumer_supplies  = &beagle_vmmc2_supply,
 };
 
-/* VDAC for DSS driving S-Video (8 mA unloaded, max 65 mA) */
-static struct regulator_init_data beagle_vdac = {
-	.constraints = {
-		.min_uV			= 1800000,
-		.max_uV			= 1800000,
-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-					| REGULATOR_MODE_STANDBY,
-		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-					| REGULATOR_CHANGE_STATUS,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &beagle_vdac_supply,
-};
-
-/* VPLL2 for digital video outputs */
-static struct regulator_init_data beagle_vpll2 = {
-	.constraints = {
-		.name			= "VDVI",
-		.min_uV			= 1800000,
-		.max_uV			= 1800000,
-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-					| REGULATOR_MODE_STANDBY,
-		.valid_ops_mask		= REGULATOR_CHANGE_MODE
-					| REGULATOR_CHANGE_STATUS,
-	},
-	.num_consumer_supplies	= 1,
-	.consumer_supplies	= &beagle_vdvi_supply,
-};
-
 static struct twl4030_usb_data beagle_usb_data = {
 	.usb_mode	= T2_USB_MODE_ULPI,
 };
@@ -580,8 +449,6 @@ static struct twl4030_platform_data beagle_twldata = {
 	.vmmc1		= &beagle_vmmc1,
 	.vmmc2		= &beagle_vmmc2,
 	.vsim		= &beagle_vsim,
-	.vdac		= &beagle_vdac,
-	.vpll2		= &beagle_vpll2,
 	.vaux3		= &beagle_vaux3,
 	.vaux4		= &beagle_vaux4,
 };
@@ -930,7 +797,6 @@ static struct platform_device *omap3_beagle_devices[] __initdata = {
 #ifdef CONFIG_PUGBOARD
     &metec_device,
 #endif
-	&beagle_dss_device,
 	&beagle_cam_device,
 };
 
@@ -1053,11 +919,6 @@ static void __init omap3_beagle_init(void)
 
 	omap_serial_init();
 
-	omap_mux_init_gpio(170, OMAP_PIN_INPUT);
-	gpio_request(170, "DVI_nPD");
-	/* REVISIT leave DVI powered down until it's needed ... */
-	gpio_direction_output(170, true);
-
 	if(!strcmp(expansionboard_name, "zippy"))
 	{
 		printk(KERN_INFO "Beagle expansionboard: initializing enc28j60\n");
@@ -1119,8 +980,6 @@ static void __init omap3_beagle_init(void)
 	/* Ensure SDRC pins are mux'd for self-refresh */
 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
-
-	beagle_display_init();
 }
 static void __init omap3_beagle_map_io(void)
 {
