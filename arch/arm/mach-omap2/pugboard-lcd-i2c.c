@@ -35,7 +35,7 @@
 
 #define DEVICE_NAME "lcdpug"
 
-#undef LCD_DEBUG
+#define LCD_DEBUG(...) 
 
 struct i2c_client* lcd_client = NULL;
 
@@ -82,14 +82,13 @@ static ssize_t char_map_remove(struct device *dev,
             list_del(pos);
             kfree(tmp);
             /* clear cgram settings */
-            printk(KERN_EMERG "clearing cgram map\n");
             memset(cgram_map, 0, sizeof(cgram_map));
-            printk(KERN_EMERG "removed key %s\n", buf);
+            printk("removed key %s\n", buf);
             return n;
         }
 
     }
-    printk(KERN_EMERG "key %s not found\n", buf);
+    printk("key %s not found\n", buf);
     return n; 
 }
 
@@ -98,25 +97,27 @@ static ssize_t char_map_store(struct device *dev,
                    const char *buf, size_t n)
 {
     const char* read_key = buf;
-    char* read_map = strchr(buf, ',') + 1;
-    unsigned char* key = (char*)kmalloc(read_map - read_key, GFP_KERNEL);
-    memset(key, 0, read_map - read_key);
     struct char_map_list *tmp;
+    char* read_map = strchr(buf, ',') + 1;
+    unsigned char* key;
     struct list_head *q, *pos;
-    struct char_map_list* tmp_item = (struct char_map_list*)kmalloc(sizeof(struct char_map_list), GFP_KERNEL);
     unsigned int alt;
     int i = 0;
+    struct char_map_list* tmp_item = (struct char_map_list*)kmalloc(sizeof(struct char_map_list), GFP_KERNEL);
+
+    key = (char*)kmalloc(read_map - read_key, GFP_KERNEL);
+    memset(key, 0, read_map - read_key);
 
     if((int)read_map == 1)
     {
-            printk(KERN_EMERG "lcdpug: wrong key/map format, missing comma\n");
+            printk("lcdpug: wrong key/map format, missing comma\n");
             return -EINVAL;
     }
-    printk(KERN_EMERG "Malloced key %p\n", key);
+    LCD_DEBUG("Malloced key %p\n", key);
     tmp_item->map = 0;
     if (sscanf(read_map+i, "%llx,%x", &tmp_item->map, &alt) != 2) {
         if(sscanf(read_map+i, ",%x", &alt) != 1){
-            printk(KERN_EMERG "lcdpug: wrong map format, must be 8*HH\n");
+            printk("lcdpug: wrong map format, must be 8*HH\n");
             return -EINVAL;
         }
     }
@@ -132,17 +133,16 @@ static ssize_t char_map_store(struct device *dev,
             list_del(pos);
             kfree(tmp);
             /* clear cgram settings */
-            printk(KERN_EMERG "clearing cgram map\n");
             memset(cgram_map, 0, sizeof(cgram_map));
-            printk(KERN_EMERG "removed previous key %s\n", key);
+            LCD_DEBUG("removed previous key %s\n", key);
             break;
         }
     }
 
-    printk(KERN_EMERG "Malloced item %p\n", tmp_item);
+    LCD_DEBUG("Malloced item %p\n", tmp_item);
     tmp_item->key = key;
     tmp_item->alternate = (unsigned char)alt;
-    printk(KERN_EMERG "Adding to list\n");
+    LCD_DEBUG("Adding to list\n");
     list_add(&tmp_item->list, &char_map.list);
     return n;
 }
@@ -153,7 +153,6 @@ DEVICE_ATTR(cmap_show, 0444, char_map_show, NULL);
 
 static int lcd_open(struct inode *inode, struct file *filp)
 {
-    printk("lcd open\n");
     if(dev_open)
         return -EBUSY;
     dev_open = true;
@@ -162,7 +161,6 @@ static int lcd_open(struct inode *inode, struct file *filp)
 
 static int lcd_release(struct inode *inode, struct file *filp)
 {
-    printk("lcd close\n");
     dev_open = false;
     return 0;
 }
@@ -179,7 +177,7 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
         {
             if(strncmp(cgram_map[i]->key,&(in_buffer[*in_idx]), strlen(cgram_map[i]->key))==0)
             {
-                printk(KERN_EMERG "got match on cgram %d\n", i);
+                LCD_DEBUG("got match on cgram %d\n", i);
                 out_buffer[(*out_idx)++] = i; 
                 *in_idx += strlen(cgram_map[i]->key);
                 return;
@@ -189,14 +187,14 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
 
     list_for_each(pos, &char_map.list)
     {
-        printk(KERN_EMERG "A\n");
+        LCD_DEBUG("A\n");
         tmp = list_entry(pos, struct char_map_list, list);
         if(strncmp(tmp->key,&(in_buffer[*in_idx]), strlen(tmp->key))==0)
         {
-            printk(KERN_EMERG "B\n");
+            LCD_DEBUG("B\n");
             if(!tmp->map)
             {
-                printk(KERN_EMERG "D\n");
+                LCD_DEBUG("D\n");
                 /* direct translation */
                 out_buffer[(*out_idx)++] = tmp->alternate;
                 *in_idx += strlen(tmp->key);
@@ -204,7 +202,7 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
             }
             else
             {
-                printk(KERN_EMERG "C\n");
+                LCD_DEBUG("C\n");
                 /* first we find an empty cgram location */
                 for(i = 0; i < 16; i++)
                 {
@@ -212,33 +210,34 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
                     {
                         unsigned char cgram_cmd[18] = {0};
                         int j = 0;
+                        int res = 0;
 
                         cgram_map[i] = tmp;
-                        printk(KERN_EMERG "adding match %x on cgram %d\n", cgram_map[i], i);
+                        LCD_DEBUG(KERN_EMERG "adding match %x on cgram %d\n", cgram_map[i], i);
                         out_buffer[(*out_idx)++] = i;
                         *in_idx += strlen(tmp->key);
 
                         cgram_cmd[0] = 0x80;
                         cgram_cmd[1] = 0x40 | i; 
-                        printk(KERN_EMERG "map 80 %x 40\n", cgram_cmd[1]);
+                        LCD_DEBUG("map 80 %x 40\n", cgram_cmd[1]);
                         cgram_cmd[2] = 0x40;
                         for(j = 0; j < 8; j++)
                         {
                             cgram_cmd[j + 3] = ((unsigned char*)&tmp->map)[j] & 0x1F;
-                            printk(KERN_EMERG "map %x\n", cgram_cmd[j +3]);
+                            LCD_DEBUG("map %x\n", cgram_cmd[j +3]);
                         }
-                        int res = i2c_master_send(lcd_client, cgram_cmd, 11);
+                        res = i2c_master_send(lcd_client, cgram_cmd, 11);
                         if(res != 11)
                         {
                             udelay(10);
-                            printk(KERN_EMERG "retrying send\n");
+                            LCD_DEBUG("retrying send\n");
                             res = i2c_master_send(lcd_client, cgram_cmd, 11);
                         }
-                        printk(KERN_EMERG "write cgram res %d\n", res);
+                        LCD_DEBUG("write cgram res %d\n", res);
                         return;
                     }
                 }
-                printk(KERN_EMERG "D\n");
+                LCD_DEBUG("D\n");
                 /* if we get here, all cgram is in use. Use alternate */
                 out_buffer[(*out_idx)++] = tmp->alternate;
                 *in_idx += strlen(tmp->key);
@@ -246,7 +245,7 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
             }
         }
     }
-    printk(KERN_EMERG "E\n");
+    LCD_DEBUG("E\n");
     out_buffer[(*out_idx)++] = in_buffer[(*in_idx)++];
 }
 
@@ -262,17 +261,16 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
     if(write_buffer_idx == 0)
     {
         /* clear cgram settings */
-        printk(KERN_EMERG "clearing cgram map\n");
         memset(cgram_map, 0, sizeof(cgram_map));
         memset(write_buffer, 0x20, 40);
     }
 
-    printk(KERN_EMERG "write_buffer_idx: %d count: %d write_buffer:[%s]\n", write_buffer_idx, count, write_buffer);
+    LCD_DEBUG("write_buffer_idx: %d count: %d write_buffer:[%s]\n", write_buffer_idx, count, write_buffer);
     while((write_buffer_idx < 40) && (i < count))
     {
         if(buf[i] == '\n')
         {
-            printk(KERN_EMERG "got flush! write_buffer_idx: %d i: %d write_buffer: [%s]\n", write_buffer_idx, i, write_buffer);
+            LCD_DEBUG("got flush! write_buffer_idx: %d i: %d write_buffer: [%s]\n", write_buffer_idx, i, write_buffer);
              break;
         }
         translate(write_buffer, &write_buffer_idx, buf, &i);
@@ -287,16 +285,16 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
         for( i = 0; i < 20; i++)
         {
             buffer[i + 3] = write_buffer[i];
-            printk(KERN_EMERG "ddram %x\n", buffer[i + 3]);
+            LCD_DEBUG("ddram %x\n", buffer[i + 3]);
         }
         res = i2c_master_send(lcd_client, buffer, 23);
         if(res != 23)
         {
             udelay(10);
-            printk(KERN_EMERG "retrying send\n");
+            LCD_DEBUG("retrying send\n");
             res = i2c_master_send(lcd_client, buffer, 23);
         }
-        printk(KERN_EMERG "write res1 %d\n", res);
+        LCD_DEBUG("write res1 %d\n", res);
 
         buffer[0] = 0x80;
         buffer[1] = 0xc0; /* position on 1x0 */
@@ -309,10 +307,10 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
         if(res != 23)
         {
             udelay(10);
-            printk(KERN_EMERG "retrying send\n");
+            LCD_DEBUG("retrying send\n");
             res = i2c_master_send(lcd_client, buffer, 23);
         }
-        printk(KERN_EMERG "write res2 %d\n", res);
+        LCD_DEBUG("write res2 %d\n", res);
 
         write_buffer_idx = 0;
     }
@@ -387,7 +385,6 @@ static int __init lcd_i2c_drv_init(void)
 {
     int res = 0;
 
-    printk(KERN_EMERG "clearing cgram map\n");
     memset(cgram_map, 0, sizeof(cgram_map));
 
     major = register_chrdev(0, DEVICE_NAME, &lcd_fops);
