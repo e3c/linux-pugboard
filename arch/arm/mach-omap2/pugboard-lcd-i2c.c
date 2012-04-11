@@ -333,6 +333,7 @@ static int lcd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
     mdelay(10);
     res = i2c_master_send(client, "\x00\x38", 2);
     lcd_client = client;
+    mdelay(10);
 	return 0;
 }
 
