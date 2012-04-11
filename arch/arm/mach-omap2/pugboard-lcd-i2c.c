@@ -230,7 +230,7 @@ static void translate(char* out_buffer, int* out_idx, char* in_buffer, int* in_i
                         if(res != 11)
                         {
                             udelay(10);
-                            LCD_DEBUG("retrying send\n");
+                            printk("LCD retrying send\n");
                             res = i2c_master_send(lcd_client, cgram_cmd, 11);
                         }
                         LCD_DEBUG("write cgram res %d\n", res);
@@ -291,7 +291,7 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
         if(res != 23)
         {
             udelay(10);
-            LCD_DEBUG("retrying send\n");
+            printk("LCD retrying send\n");
             res = i2c_master_send(lcd_client, buffer, 23);
         }
         LCD_DEBUG("write res1 %d\n", res);
@@ -307,7 +307,7 @@ static ssize_t lcd_write(struct file *filp, char *buf, size_t count, loff_t *f_p
         if(res != 23)
         {
             udelay(10);
-            LCD_DEBUG("retrying send\n");
+            printk("LCD retrying send\n");
             res = i2c_master_send(lcd_client, buffer, 23);
         }
         LCD_DEBUG("write res2 %d\n", res);
@@ -327,13 +327,19 @@ static int lcd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 {
     int res = i2c_master_send(client, "\x00\x38", 2);
     mdelay(10);
-    res = i2c_master_send(client, "\x00\x39", 2);
+    res += i2c_master_send(client, "\x00\x39", 2);
     mdelay(10);
-    res = i2c_master_send(client, "\x00\x14\x78\x5e\x6d\x0c\x01\x06", 8);
+    res += i2c_master_send(client, "\x00\x14\x78\x5e\x6d\x0c\x01\x06", 8);
     mdelay(10);
-    res = i2c_master_send(client, "\x00\x38", 2);
+    res += i2c_master_send(client, "\x00\x38", 2);
     lcd_client = client;
     mdelay(10);
+
+    if(res != 14)
+    {
+        printk("Error probing LCD I2C\n");
+        return -1;
+    }
 	return 0;
 }
 
