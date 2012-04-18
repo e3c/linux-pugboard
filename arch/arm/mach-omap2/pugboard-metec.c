@@ -497,10 +497,17 @@ struct platform_driver metec_driver = {
 	},
 };
 
+static struct class* metec_class;
+static struct device* metec_device;
+
 static int __init metec_drv_init(void)
 {
     major = register_chrdev(0, DEVICE_NAME, &metec_fops);
     printk("Metec braille line registered major %d\n", major);
+
+    metec_class = class_create(THIS_MODULE, "braille");
+    metec_device = device_create(metec_class, NULL, MKDEV(major, 0), NULL, "braille");
+
 	return platform_driver_register(&metec_driver);
 }
 
