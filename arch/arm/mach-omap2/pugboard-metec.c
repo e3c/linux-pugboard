@@ -235,7 +235,7 @@ void build_pattern(char* buf, char* patt)
 
 }
 
-ssize_t metec_write(struct file *filp, char *buf, size_t count, loff_t *f_pos)
+ssize_t metec_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
 {
     if(!dev_open)
         return -EBUSY;
