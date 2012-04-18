@@ -332,8 +332,8 @@ static int read_keys(void* data)
 
         spin_unlock_irqrestore(&metec_lock, flags);
         /* set unused bits */
-        cursor_keys |= 0xffffff0000000000;
-        front_keys |= 0xffffff0000000000;
+        cursor_keys |= 0xffffff0000000000LL;
+        front_keys |= 0xffffff0000000000LL;
 
         if(front_keys != last_front_keys)
         {
