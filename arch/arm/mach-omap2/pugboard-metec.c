@@ -237,10 +237,10 @@ void build_pattern(char* buf, char* patt)
 
 ssize_t metec_write(struct file *filp, const char *buf, size_t count, loff_t *f_pos)
 {
-    if(!dev_open)
-        return -EBUSY;
     char patt[NUMBER_OF_LINES * 24] = {0};
     char buffer[NUMBER_OF_LINES * 20] = {0};
+    if(!dev_open)
+        return -EBUSY;
     memcpy(buffer, buf, (count>(NUMBER_OF_LINES * 20)?NUMBER_OF_LINES * 20:count));
     build_pattern(buffer, patt);
     write_pattern(patt);
@@ -382,6 +382,9 @@ static int read_keys(void* data)
 static int metec_probe(struct platform_device *pdev)
 {
     int err = 0;
+    int i = 0;
+    char patt[48] = { 0 };
+
     if((err = gpio_request(METEC_STROBE, "metec STROBE")) < 0)
     {
         printk("Error requesting RS %d\n", err);
@@ -422,7 +425,6 @@ static int metec_probe(struct platform_device *pdev)
     gpio_set_value(METEC_CLK, 0);
     mdelay(1);
 
-    char patt[48] = { 0 };
     write_pattern(patt);
 
     input_dev = input_allocate_device();
@@ -436,7 +438,6 @@ static int metec_probe(struct platform_device *pdev)
     input_dev->id.bustype   = BUS_HOST;
     input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REP) | BIT_MASK(EV_MSC);
     input_dev->mscbit[0] = BIT(MSC_RAW);
-    int i = 0;
     for(; i < 20*NUMBER_OF_LINES; i++)
     {
         set_bit(key_map[i],  input_dev->keybit);
