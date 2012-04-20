@@ -970,7 +970,7 @@ static struct gpio_keys_button gpio_buttons[] = {
             .gpio                   = 132,
             .desc                   = "charging",
             .wakeup                 = 1,
-            .active_low     = 1,
+            .active_low     = 0,
     },
     {
             .code                   = KEY_AUDIO,
@@ -1005,7 +1005,7 @@ static struct gpio_keys_button gpio_buttons[] = {
             .gpio                   = 23,
             .desc                   = "on",
             .wakeup                 = 1,
-            .active_low     = 1,
+            .active_low     = 0,
     },
     {
             .code                   = KEY_POWER,
