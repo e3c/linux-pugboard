@@ -986,7 +986,7 @@ static struct gpio_keys_button gpio_buttons[] = {
             .active_low     = 1,
     },
     {
-            .code                   = KEY_CAMERA,
+            .code                   = KEY_ZENKAKUHANKAKU,
             .gpio                   = 22,
             .desc                   = "camera lock",
             .wakeup                 = 1,
