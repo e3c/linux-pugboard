@@ -591,14 +591,6 @@ static struct gpio_led gpio_leds[] = {
          .name          = "pugboard::camera1",
          .gpio          = 146,
     },
-    {
-         .name          = "pugboard::camera2",
-         .gpio          = 143,
-    },
-    {
-         .name          = "pugboard::camera3",
-         .gpio          = 145,
-    }
 };
 
 static struct gpio_led_platform_data gpio_led_info = {
