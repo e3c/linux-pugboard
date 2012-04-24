@@ -718,6 +718,20 @@ static struct gpio_keys_button gpio_buttons[] = {
             .wakeup                 = 1,
             .active_low     = 1,
     },
+    {
+            .code                   = KEY_MODE,
+            .gpio                   = 143,
+            .desc                   = "mode",
+            .wakeup                 = 1,
+            .active_low     = 1,
+    },
+    {
+            .code                   = KEY_CAMERA,
+            .gpio                   = 145,
+            .desc                   = "photo",
+            .wakeup                 = 1,
+            .active_low     = 1,
+    },
 };
 
 static struct gpio_keys_platform_data gpio_key_info = {
