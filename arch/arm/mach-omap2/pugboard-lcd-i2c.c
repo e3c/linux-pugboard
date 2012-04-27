@@ -324,23 +324,34 @@ static struct file_operations lcd_fops = {
 };
 
 static int lcd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *idp)
-{
-    int res = i2c_master_send(client, "\x00\x38", 2);
-    mdelay(10);
-    res += i2c_master_send(client, "\x00\x39", 2);
-    mdelay(10);
-    res += i2c_master_send(client, "\x00\x14\x78\x5e\x6d\x0c\x01\x06", 8);
-    mdelay(10);
-    res += i2c_master_send(client, "\x00\x38", 2);
-    lcd_client = client;
-    mdelay(10);
+{ 
+    int i = 0;
+    printk("LCD I2C init. \n");
 
-    if(res != 14)
+    for(; i < 2; i++)
     {
-        printk("Error probing LCD I2C\n");
-        return -1;
+        printk("    Try #%d...", i+1);
+        int res = i2c_master_send(client, "\x00\x38", 2);
+        mdelay(20);
+        res += i2c_master_send(client, "\x00\x39", 2);
+        mdelay(20);
+        res += i2c_master_send(client, "\x00\x14\x78\x5e\x6d\x0c\x01\x06", 8);
+        mdelay(20);
+        res += i2c_master_send(client, "\x00\x38", 2);
+        lcd_client = client;
+        mdelay(20);
+        if(res == 14)
+        {
+            printk("Success.\n");
+	        return 0;
+        }
+        if(res != 14)
+        {
+            printk("Failed LCD initialization!\n");
+        }
+        mdelay(1024);
     }
-	return 0;
+    return -1;
 }
 
 static int lcd_i2c_remove(struct i2c_client* client)
