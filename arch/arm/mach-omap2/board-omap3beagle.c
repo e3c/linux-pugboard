@@ -582,6 +582,7 @@ static struct gpio_led gpio_leds[] = {
 	{
 		.name			= "pugboard::exam_mode",
         .gpio           = 15,
+        .active_low     = true,
 	},
     {
         .name           = "pugboard::camera0",
