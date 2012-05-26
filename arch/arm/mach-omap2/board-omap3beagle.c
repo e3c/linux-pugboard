@@ -291,11 +291,14 @@ static int beagle_twl_gpio_setup(struct device *dev,
 	/* REVISIT: need ehci-omap hooks for external VBUS
 	 * power switch and overcurrent detect
 	 */
-
+	int res = 0;
 	if (cpu_is_omap3630()) {
-		/* Power on camera interface */
-		gpio_request(gpio + 2, "CAM_EN");
-		gpio_direction_output(gpio + 2, 1);
+		/* Power down DVI */
+		gpio_request(gpio + 2, "DVI_PUP");
+		res = gpio_direction_output(gpio + 2, 0);
+		if(res)
+			printk("Error setting DVI_PUP direction %d\n", res);
+		gpio_set_value(gpio + 2, 0);
 
 		/* TWL4030_GPIO_MAX + 0 == ledA, EHCI nEN_USB_PWR (out, active low) */
 		gpio_request(gpio + TWL4030_GPIO_MAX, "nEN_USB_PWR");
