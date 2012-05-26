@@ -73,7 +73,7 @@ static struct omap_opp * _omap37x_l3_rate_table         = NULL;
 
 #define LCD_I2C_ADDR         ( 0x78 >> 1 )
 
-#if defined(CONFIG_SOC_CAMERA_MT9P031)
+#if defined(CONFIG_SOC_CAMERA_MT9P031) || defined(CONFIG_SOC_CAMERA_MT9P031_MODULE)
 #include <media/v4l2-int-device.h>
 #include <media/mt9p031.h>
 extern struct mt9p031_platform_data mt9p031_pdata;
@@ -517,7 +517,7 @@ static struct i2c_board_info __initdata beagle_li5m03_lcd_i2c2_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("lcdpug", LCD_I2C_ADDR),
 	},
-#if defined(CONFIG_SOC_CAMERA_MT9P031)
+#if defined(CONFIG_SOC_CAMERA_MT9P031) || defined(CONFIG_SOC_CAMERA_MT9P031_MODULE)
 	{
 		I2C_BOARD_INFO("mt9p031", MT9P031_I2C_ADDR),
 		.platform_data	= &mt9p031_pdata,
