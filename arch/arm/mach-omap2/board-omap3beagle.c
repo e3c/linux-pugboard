@@ -314,9 +314,6 @@ static int beagle_twl_gpio_setup(struct device *dev,
 	}
 
 
-	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
-	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
-
 	return 0;
 }
 
@@ -986,7 +983,6 @@ static void __init omap3_beagle_init(void)
 		beaglefpga_init_spi();
 	}
 
-	usb_musb_init();
 	usb_ehci_init(&ehci_pdata);
 
 	/* Ensure SDRC pins are mux'd for self-refresh */
