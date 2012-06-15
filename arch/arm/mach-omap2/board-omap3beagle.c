@@ -1274,7 +1274,6 @@ static void __init omap3_beagle_init(void)
 		beaglefpga_init_spi();
 	}
 
-	usb_musb_init();
 	usb_ehci_init(&ehci_pdata);
 
 	/* Ensure SDRC pins are mux'd for self-refresh */
