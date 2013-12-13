@@ -50,7 +50,7 @@
 			macro
 ************************************************************************/
 // Macro to configure I2c level shifter. Use only for MT9P031 Headboards from Aptina; not required for Leopard Imaging or elsewise. 
-#define MT9P031_HEADBOARD
+#undef MT9P031_HEADBOARD
 
 #define MT9P031_CHIP_ID			0x1801
 #define MT9P031_MAX_HEIGHT		1944
