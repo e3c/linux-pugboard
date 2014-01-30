@@ -1092,9 +1092,10 @@ static struct platform_device *omap3_beagle_devices[] __initdata = {
 	&leds_gpio,
 	&keys_gpio,
 #ifdef CONFIG_PUGBOARD
-    &metec_device,
-#endif
+        &metec_device,
+#else
 	&beagle_dss_device,
+#endif
 	&beagle_cam_device,
 };
 
