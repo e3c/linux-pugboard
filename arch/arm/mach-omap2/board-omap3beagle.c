@@ -1215,11 +1215,6 @@ static void __init omap3_beagle_init(void)
 			ARRAY_SIZE(omap3_beagle_devices));
 	omap_serial_init();
 
-	omap_mux_init_gpio(170, OMAP_PIN_INPUT);
-	gpio_request(170, "DVI_nPD");
-	/* REVISIT leave DVI powered down until it's needed ... */
-	gpio_direction_output(170, true);
-
 	if(!strcmp(expansionboard_name, "zippy"))
 	{
 		printk(KERN_INFO "Beagle expansionboard: initializing enc28j60\n");
